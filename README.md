@@ -83,4 +83,19 @@ En cuanto al uso de ia, esta fue involucrada posterior al diseño de la base de 
 
 Una vez establecida la estructura del sistema, el modelo fue de gran ayuda para la generación de los scripts, ya que, teniendo levantada la base de datos, se debían realizar consultas a la misma, además de implementar lógica para algunos requisitos.
 
+# Cumplimiento de requisitos
+1. Registrar una depósito/retiro (ambas son requeridas) de un usuario (monto + fecha)
+Se realiza en /api/transactions/ y se cumple mediante el monto de la transacción y timestamp del momento que se ingresó la acción.
+2. Registra una orden de compra/venta (ambas son requeridas) de una Stock
+Se realiza en /api/transactions/ 
+3. Edita información personal del usuario
+Se realiza en /api/users/id/ y se puede editar toda la información del usuario (excepto la id)
+De igual manera esta implementación es poco realista, ya que en una aplicación real, la modificación de datos personales se enfocaría más en datos como la contraseña, el correo electrónico y el nombre de usuario, no en todos los datos del usuario.
+4. Edita información del portafolio del usuario.
+Editar la información de un portafolio a libre disposición del usuario sería poco realista para un sistema de Stock, por lo que este requerimiento se cumple al momento de realizar cualquier transacción, ya que modifica cualquier valor que se muestra en la ruta /api/users/id/portafolio
+5. Consultar el total de un portafolio de un usuario
+Se revisa en /api/users/id/portafolio.
+6. consultar los últimos movimientos del usuario.
+En /api/transactions/ se obtienen todos los movimientos ejecutados por el usuario el cual está iniciada la sesión (en este caso admin).
+
 
