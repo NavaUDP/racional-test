@@ -1,71 +1,177 @@
-# api/views.py
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins 
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated  # ¡Importante!
-from .models import Transaction, User
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action 
+from .models import Transaction, User, Stock, Holding 
 from .serializers import TransactionSerializer, UserSerializer
-from decimal import Decimal # Para manejar el dinero correctamente
+from decimal import Decimal
+from django.db import transaction
+from django.db.models import F, Sum, DecimalField
 
-# --- ViewSet para Transacciones (Depósitos/Retiros) ---
+
+# --- TransactionViewSet (ACTUALIZADO) ---
 class TransactionViewSet(viewsets.ModelViewSet):
     """
-    API endpoint para ver y crear transacciones.
-    Solo se listarán las transacciones del usuario autenticado.
+    API endpoint para Transacciones (Depósito, Retiro, Compra, Venta).
     """
     serializer_class = TransactionSerializer
-    
-    # Con esto, solo usuarios logueados pueden usar este endpoint
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """
-        Esta vista solo debe devolver las transacciones
-        del usuario que está haciendo la petición.
+        Filtra para que solo muestre las transacciones del usuario logueado.
         """
         return Transaction.objects.filter(user=self.request.user).order_by('-timestamp')
 
+    # 'atomic' asegura que si algo falla (ej. no hay fondos),
+    # no se guarde ningún cambio en la BBDD (no se resta balance, etc.)
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
-        Sobrescribimos el método POST para manejar la lógica 
-        de depósitos y retiros.
+        Sobrescribimos el método POST para manejar los 4 tipos de lógica:
+        - deposit
+        - withdrawal
+        - buy
+        - sell
         """
-        # 1. Usamos el serializer para validar el JSON de entrada
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # 2. Si es válido, extraemos los datos
         validated_data = serializer.validated_data
         type = validated_data.get('type')
-        amount = Decimal(validated_data.get('total_amount')) # Usamos Decimal
         user = request.user
 
-        # 3. ---- INICIO LÓGICA DE NEGOCIO ----
-        
-        if type == 'deposit':
-            # A los depósitos, les sumamos el balance
-            user.balance += amount
-            user.save()
+        # --- LÓGICA DE DEPÓSITO / RETIRO (ya la teníamos) ---
+        if type in ['deposit', 'withdrawal']:
+            amount = Decimal(validated_data.get('total_amount'))
+            
+            if type == 'deposit':
+                user.balance += amount
+                user.save()
+                
+            elif type == 'withdrawal':
+                if user.balance < amount:
+                    return Response({"error": "Fondos insuficientes."}, status=status.HTTP_400_BAD_REQUEST)
+                user.balance -= amount
+                user.save()
+                # Guardamos el monto como negativo para egresos
+                validated_data['total_amount'] = -amount 
 
-        elif type == 'withdrawal':
-            # A los retiros, validamos fondos y restamos
-            if user.balance < amount:
-                return Response(
-                    {"error": "Fondos insuficientes."}, 
-                    status=status.HTTP_400_BAD_REQUEST
+            # Guardamos y devolvemos la transacción
+            serializer.save(user=user, status='completed')
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        # --- LÓGICA DE COMPRA / VENTA (NUEVO) ---
+        elif type in ['buy', 'sell']:
+            
+            stock = validated_data.get('stock') # El objeto Stock (gracias al serializer)
+            quantity = validated_data.get('quantity')
+            unit_price = stock.current_price # ¡Usamos el precio actual!
+            total_amount = Decimal(unit_price * quantity)
+
+            if type == 'buy':
+                if user.balance < total_amount:
+                    # Opcional: crea la tx como 'failed'
+                    serializer.save(user=user, status='failed', unit_price=unit_price, total_amount=-total_amount)
+                    return Response({"error": "Fondos insuficientes para la compra."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # 1. Restar balance
+                user.balance -= total_amount
+                user.save()
+
+                # 2. Actualizar/Crear Posición (Portafolio)
+                # get_or_create es perfecto para esto
+                holding, created = Holding.objects.get_or_create(
+                    user=user, 
+                    stock=stock,
+                    defaults={'quantity': 0, 'average_cost_price': 0}
                 )
-            user.balance -= amount
-            user.save()
-        
-        # 4. ---- FIN LÓGICA DE NEGOCIO ----
+                
+                # Cálculo de precio promedio ponderado
+                old_total_cost = holding.average_cost_price * holding.quantity
+                new_total_cost = unit_price * quantity
+                new_quantity = holding.quantity + quantity
 
-        # 5. Guardamos la transacción en la BBDD, asignando el usuario
-        #    y marcándola como 'completada'.
-        transaction = serializer.save(
-            user=user, 
-            status='completed'
-        )
+                holding.average_cost_price = (old_total_cost + new_total_cost) / new_quantity
+                holding.quantity = new_quantity
+                holding.save()
+
+                # 3. Guardar Transacción
+                transaction = serializer.save(
+                    user=user, 
+                    status='completed', 
+                    unit_price=unit_price, 
+                    total_amount=-total_amount # Negativo = egreso
+                )
+
+            elif type == 'sell':
+                try:
+                    # 1. Validar si tiene la acción y cantidad suficiente
+                    holding = Holding.objects.get(user=user, stock=stock)
+                    if holding.quantity < quantity:
+                        raise Holding.DoesNotExist # Forzamos el error
+                except Holding.DoesNotExist:
+                    serializer.save(user=user, status='failed', unit_price=unit_price, total_amount=total_amount)
+                    return Response({"error": "No tienes suficientes acciones para vender."}, status=status.HTTP_400_BAD_REQUEST)
+
+                # 2. Sumar balance
+                user.balance += total_amount
+                user.save()
+
+                # 3. Actualizar Holding
+                holding.quantity -= quantity
+                if holding.quantity == 0:
+                    holding.delete() # Limpiamos si ya no tiene
+                else:
+                    holding.save()
+
+                # 4. Guardar Transacción
+                transaction = serializer.save(
+                    user=user, 
+                    status='completed', 
+                    unit_price=unit_price, 
+                    total_amount=total_amount # Positivo = ingreso
+                )
+            
+            # Devolvemos la transacción creada
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         
-        # 6. Devolvemos el objeto creado (HTTP 201)
-        # Usamos el serializer para convertir el objeto 'transaction' a JSON
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+class UserViewSet(
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet
+):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return User.objects.filter(pk=self.request.user.pk)
+    
+    @action(detail=True, methods=['get'])
+    def portfolio(self, request, pk=None):
+        """
+        Calcula y devuelve el valor total actual del portafolio del usuario.
+        """
+        # 1. get_object() obtiene el usuario (protegido por get_queryset)
+        user = self.get_object() 
+        
+        # 2. Usamos la BBDD para hacer el cálculo (¡muy eficiente!)
+        # Suma (quantity * stock__current_price) para todas las posiciones del usuario
+        result = user.holdings.annotate(
+            current_value=F('quantity') * F('stock__current_price')
+        ).aggregate(
+            total=Sum('current_value', output_field=DecimalField())
+        )
+
+        total_value = result['total'] or Decimal('0.00') # Si no tiene posiciones, devuelve 0
+        
+        # 3. Devolvemos la respuesta
+        return Response({
+            'username': user.username,
+            'total_portfolio_value': total_value,
+            'balance': user.balance,
+            'total_equity': user.balance + total_value # Valor total (dinero + acciones)
+        })
