@@ -3,13 +3,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action 
 from .models import Transaction, User, Stock, Holding 
-from .serializers import TransactionSerializer, UserSerializer
+from .serializers import TransactionSerializer, UserSerializer, HoldingSerializer
 from decimal import Decimal
 from django.db import transaction
 from django.db.models import F, Sum, DecimalField
 
-
-# --- TransactionViewSet (ACTUALIZADO) ---
 class TransactionViewSet(viewsets.ModelViewSet):
     """
     API endpoint para Transacciones (Depósito, Retiro, Compra, Venta).
@@ -23,8 +21,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
         """
         return Transaction.objects.filter(user=self.request.user).order_by('-timestamp')
 
-    # 'atomic' asegura que si algo falla (ej. no hay fondos),
-    # no se guarde ningún cambio en la BBDD (no se resta balance, etc.)
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -41,7 +37,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
         type = validated_data.get('type')
         user = request.user
 
-        # --- LÓGICA DE DEPÓSITO / RETIRO (ya la teníamos) ---
         if type in ['deposit', 'withdrawal']:
             amount = Decimal(validated_data.get('total_amount'))
             
@@ -62,17 +57,15 @@ class TransactionViewSet(viewsets.ModelViewSet):
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-        # --- LÓGICA DE COMPRA / VENTA (NUEVO) ---
         elif type in ['buy', 'sell']:
             
-            stock = validated_data.get('stock') # El objeto Stock (gracias al serializer)
+            stock = validated_data.get('stock') 
             quantity = validated_data.get('quantity')
-            unit_price = stock.current_price # ¡Usamos el precio actual!
+            unit_price = stock.current_price 
             total_amount = Decimal(unit_price * quantity)
 
             if type == 'buy':
                 if user.balance < total_amount:
-                    # Opcional: crea la tx como 'failed'
                     serializer.save(user=user, status='failed', unit_price=unit_price, total_amount=-total_amount)
                     return Response({"error": "Fondos insuficientes para la compra."}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -81,7 +74,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 user.save()
 
                 # 2. Actualizar/Crear Posición (Portafolio)
-                # get_or_create es perfecto para esto
                 holding, created = Holding.objects.get_or_create(
                     user=user, 
                     stock=stock,
@@ -102,7 +94,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     user=user, 
                     status='completed', 
                     unit_price=unit_price, 
-                    total_amount=-total_amount # Negativo = egreso
+                    total_amount=-total_amount 
                 )
 
             elif type == 'sell':
@@ -110,7 +102,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     # 1. Validar si tiene la acción y cantidad suficiente
                     holding = Holding.objects.get(user=user, stock=stock)
                     if holding.quantity < quantity:
-                        raise Holding.DoesNotExist # Forzamos el error
+                        raise Holding.DoesNotExist 
                 except Holding.DoesNotExist:
                     serializer.save(user=user, status='failed', unit_price=unit_price, total_amount=total_amount)
                     return Response({"error": "No tienes suficientes acciones para vender."}, status=status.HTTP_400_BAD_REQUEST)
@@ -122,7 +114,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 # 3. Actualizar Holding
                 holding.quantity -= quantity
                 if holding.quantity == 0:
-                    holding.delete() # Limpiamos si ya no tiene
+                    holding.delete() 
                 else:
                     holding.save()
 
@@ -131,7 +123,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     user=user, 
                     status='completed', 
                     unit_price=unit_price, 
-                    total_amount=total_amount # Positivo = ingreso
+                    total_amount=total_amount 
                 )
             
             # Devolvemos la transacción creada
@@ -151,27 +143,32 @@ class UserViewSet(
         return User.objects.filter(pk=self.request.user.pk)
     
     @action(detail=True, methods=['get'])
-    def portfolio(self, request, pk=None):
+    def portafolio(self, request, pk=None):
         """
-        Calcula y devuelve el valor total actual del portafolio del usuario.
+        Calcula y devuelve el valor total Y la composición
+        del portafolio del usuario.
         """
-        # 1. get_object() obtiene el usuario (protegido por get_queryset)
         user = self.get_object() 
-        
-        # 2. Usamos la BBDD para hacer el cálculo (¡muy eficiente!)
-        # Suma (quantity * stock__current_price) para todas las posiciones del usuario
-        result = user.holdings.annotate(
+
+        # 1. Obtenemos todas las posiciones y calculamos su valor actual
+        holdings_queryset = user.holdings.select_related('stock').annotate(
             current_value=F('quantity') * F('stock__current_price')
-        ).aggregate(
-            total=Sum('current_value', output_field=DecimalField())
         )
 
-        total_value = result['total'] or Decimal('0.00') # Si no tiene posiciones, devuelve 0
-        
-        # 3. Devolvemos la respuesta
+        # 2. Serializamos la lista de holdings con su valor calculado
+        holding_serializer = HoldingSerializer(holdings_queryset, many=True)
+
+        # 3. Calculamos el total
+        total_value = holdings_queryset.aggregate(
+            total=Sum('current_value', output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+
+        # 4. Devolvemos la respuesta completa
         return Response({
             'username': user.username,
             'total_portfolio_value': total_value,
             'balance': user.balance,
-            'total_equity': user.balance + total_value # Valor total (dinero + acciones)
+            'total_equity': user.balance + total_value,
+
+            'holdings': holding_serializer.data 
         })

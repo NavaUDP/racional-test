@@ -14,7 +14,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         slug_field='ticker', 
         queryset=Stock.objects.all(),
         required=False, 
-        allow_null=True  # <-- AÑADE ESTO
+        allow_null=True 
     )
 
     class Meta:
@@ -23,11 +23,9 @@ class TransactionSerializer(serializers.ModelSerializer):
         
         read_only_fields = ('user', 'status', 'unit_price', 'timestamp')
 
-        # Hacemos que 'total_amount' y 'quantity' no sean requeridos
-        # Y QUE TAMBIÉN ACEPTEN NULOS
         extra_kwargs = {
-            'total_amount': {'required': False, 'allow_null': True}, # <-- AÑADE allow_null
-            'quantity': {'required': False, 'allow_null': True},     # <-- AÑADE allow_null
+            'total_amount': {'required': False, 'allow_null': True}, 
+            'quantity': {'required': False, 'allow_null': True},     
         }
 
     def validate(self, data):
@@ -37,7 +35,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         type = data.get('type')
         
         if type in ['deposit', 'withdrawal']:
-            # 'get' devuelve None si no existe, lo cual es perfecto
+            #'get' devuelve None si no existe
             if data.get('total_amount') is None:
                 raise serializers.ValidationError("Depósitos y retiros requieren 'total_amount'.")
             if data.get('stock') is not None or data.get('quantity') is not None:
@@ -59,3 +57,25 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Tipo de transacción '{type}' no es válido.")
 
         return data
+    
+class SimpleStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stock
+        fields = ['ticker', 'company_name', 'current_price']
+
+class HoldingSerializer(serializers.ModelSerializer):
+    stock = SimpleStockSerializer(read_only=True)
+    current_value = serializers.DecimalField(
+        max_digits=15, 
+        decimal_places=2, 
+        read_only=True
+    )
+
+    class Meta:
+        model = Holding
+        fields = [
+            'stock',
+            'quantity',
+            'average_cost_price',
+            'current_value'
+        ]
