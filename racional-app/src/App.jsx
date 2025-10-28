@@ -1,21 +1,33 @@
-import React from 'react';
-import Dashboard from './views/Dashboard';
+import React, { useState } from 'react';
 import './App.css'; 
-// 1. IMPORTA el logo desde la carpeta de assets
-import racionalLogo from './assets/racional-logo.png'; // <-- CAMBIA 'logo.svg' SI TU ARCHIVO SE LLAMA DIFERENTE
+
+import { usePortfolioStream } from './hooks/usePortfolioStream';
+import Sidebar from './components/Sidebar/Sidebar';
+import Header from './components/Header/Header'; // 1. IMPORTAMOS EL NUEVO HEADER
+import Dashboard from './views/Dashboard'; 
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { data, loading, error } = usePortfolioStream();
+
   return (
     <div className="App">
-      {/* 2. ESTRUCTURA DEL HEADER */}
-      <header className="App-header">
-        <img src={racionalLogo} className="header-logo" alt="Racional Logo" />
-        <h1>Bienvenido a tu Portafolio</h1>
-      </header>
+      {/* El Sidebar sigue igual */}
+      <Sidebar 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        data={data}
+      />
       
-      {/* El 'main' ahora contendrá el dashboard centrado */}
+      {/* 2. RENDERIZAMOS EL NUEVO HEADER */}
+      {/* Le pasamos la función para que el botón pueda abrir el sidebar */}
+      <Header onToggleSidebar={() => setIsSidebarOpen(true)} />
+      
+      {/* 3. El <header> antiguo de aquí desaparece */}
+
+      {/* El main sigue igual */}
       <main>
-        <Dashboard />
+        <Dashboard data={data} loading={loading} error={error} />
       </main>
     </div>
   );

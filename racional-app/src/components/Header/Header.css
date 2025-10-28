@@ -1,0 +1,63 @@
+/* .site-header es la barra principal
+  - Ocupa el 100% del ancho.
+  - Es 'sticky' (se queda pegada arriba al hacer scroll).
+*/
+.site-header {
+  width: 100%;
+  background-color: #ffffff;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  
+  /* MODIFICADO: 
+     Aplicamos el padding horizontal aquí (ej. 24px) 
+     y el vertical (16px) 
+  */
+  padding: 16px 24px;
+  
+  position: sticky;
+  top: 0;
+  z-index: 900; 
+  
+  /* Importante para que el padding no rompa el ancho */
+  box-sizing: border-box;
+}
+
+/* .header-content es el contenedor interno
+  - Ya NO necesita reglas de ancho o margen.
+  - Solo alinea los items.
+*/
+.header-content {
+  display: flex;
+  align-items: center;
+  width: 100%; /* Ocupa el espacio disponible con padding */
+}
+
+/* Los estilos del botón, logo y título no cambian */
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: #555;
+  cursor: pointer;
+  padding: 0 10px 0 0;
+  margin-right: 10px;
+  line-height: 1;
+  border-right: 1px solid #eee;
+}
+.sidebar-toggle-btn:hover {
+  color: #000;
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+  margin-right: 16px;
+}
+
+.header-title {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  margin: 0;
+  font-weight: 600;
+  color: #213547;
+}

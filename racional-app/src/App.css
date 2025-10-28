@@ -1,56 +1,28 @@
-/*
-  .App es el contenedor principal.
-  Lo usamos para centrar todo el contenido horizontalmente.
+/* .App ahora solo se encarga del flujo vertical de la página.
+  Ya no necesita 'align-items: center' porque el header
+  ocupa el 100% del ancho.
 */
 .App {
   display: flex;
   flex-direction: column;
-  align-items: center; /* ESTA LÍNEA CENTRA TODO */
   width: 100%;
 }
 
-.App-header {
-  /* Estilos Flexbox para logo + título */
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-
-  /* Estilos de "tarjeta" elevada */
-  background-color: #ffffff;
-  color: #213547;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #ddd;
-  border-radius: 8px;
-
-  /* Tamaño y centrado del propio header */
-  width: 80vw;
-  max-width: 1100px;
-  margin: 20px auto 30px auto;
-  padding: 16px 24px;
-}
-
-/* Estilos para el logo dentro del header */
-.header-logo {
-  height: 40px; 
-  width: auto;
-  margin-right: 16px;
-}
-
-/* Ajustamos el h1 */
-.App-header h1 {
-  font-size: 1.75rem;
-  line-height: 1.2;
-  margin: 0;
-  font-weight: 600;
-}
+/* TODOS LOS ESTILOS de .App-header, .sidebar-toggle-btn,
+  .header-logo, y .App-header h1 FUERON ELIMINADOS de este archivo.
+  Ahora viven en Header.css
+*/
 
 /*
-  'main' es el contenedor de tu Dashboard
+  'main' es el contenedor de tu Dashboard.
+  'align-items: center' centrará horizontalmente 
+  las tarjetas de stats y los gráficos.
 */
 main {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centra los hijos de main (Stats y Gráficos) */
+  align-items: center; /* Centra el contenido del dashboard */
   min-height: 80vh;
   width: 100%;
+  padding-top: 30px; /* Espacio para separar el contenido del header */
 }

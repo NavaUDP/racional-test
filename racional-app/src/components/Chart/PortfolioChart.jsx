@@ -37,14 +37,6 @@ const PortfolioChart = ({ data }) => {
         data: data.map(item => item.portfolioValue),
         borderColor: 'rgb(75, 192, 192)',
         // ...
-      },
-      {
-        label: 'Contribuciones ($)',
-        data: data.map(item => item.contributions),
-        borderColor: 'rgb(150, 150, 150)',
-        borderDash: [5, 5], // Línea punteada
-        pointRadius: 0, // Sin puntos
-        tension: 0.1,
       }
     ],
   };
