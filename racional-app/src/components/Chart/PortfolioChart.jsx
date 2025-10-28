@@ -34,13 +34,18 @@ const PortfolioChart = ({ data }) => {
     datasets: [
       {
         label: 'Valor del Portafolio ($)',
-        // Usamos el portfolioValue para el eje Y
         data: data.map(item => item.portfolioValue),
         borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        tension: 0.1, // Curvatura de la línea
-        pointRadius: 2, // Puntos en la gráfica
+        // ...
       },
+      {
+        label: 'Contribuciones ($)',
+        data: data.map(item => item.contributions),
+        borderColor: 'rgb(150, 150, 150)',
+        borderDash: [5, 5], // Línea punteada
+        pointRadius: 0, // Sin puntos
+        tension: 0.1,
+      }
     ],
   };
 
