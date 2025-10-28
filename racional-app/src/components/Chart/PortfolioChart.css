@@ -1,0 +1,12 @@
+.chart-container {
+  position: relative;
+  height: 60vh; /* 60% de la altura de la ventana */
+  width: 80vw; /* 80% del ancho de la ventana */
+  max-width: 1100px;
+  margin: 20px auto; /* Centrado */
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background-color: #fff;
+}

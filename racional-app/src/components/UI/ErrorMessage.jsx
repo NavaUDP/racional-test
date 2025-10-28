@@ -1,14 +1,11 @@
 import React from 'react';
+import './ErrorMessage.css'; // Crearemos este CSS
 
-export const ErrorMessage = ({ message }) => {
-  const style = {
-    padding: '15px',
-    backgroundColor: '#ffefef',
-    color: '#d90000',
-    border: '1px solid #d90000',
-    borderRadius: '8px',
-    textAlign: 'center',
-    margin: '20px'
-  };
-  return <div style={style}><strong>Error:</strong> {message}</div>;
-};
+const ErrorMessage = ({ message }) => (
+  <div className="error-container">
+    <strong>Error:</strong>
+    <p>{message || 'Ha ocurrido un error inesperado.'}</p>
+  </div>
+);
+
+export default ErrorMessage;

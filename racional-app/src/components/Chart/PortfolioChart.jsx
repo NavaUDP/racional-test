@@ -1,44 +1,121 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale, // Importante para escalas de tiempo
+} from 'chart.js';
+import 'chartjs-adapter-date-fns'; // Importante para el adaptador de fechas
+import './PortfolioChart.css';
 
-/**
- * Este componente espera que la prop 'data' sea un ARRAY de objetos.
- * Ejemplo:
- * [
- * { name: '2023-10-01', value: 1000 },
- * { name: '2023-10-02', value: 1020 },
- * { name: '2023-10-03', value: 1015 }
- * ]
- */
-export const PortfolioChart = ({ data }) => {
-  if (!data || data.length === 0) {
-    return <p>No hay datos históricos para mostrar.</p>;
-  }
+// Registramos los componentes de Chart.js que vamos a usar
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale // Registramos la escala de tiempo
+);
+
+const PortfolioChart = ({ data }) => {
+  // 1. Formateamos los datos para Chart.js
+  const chartData = {
+    // Usamos las fechas como etiquetas en el eje X
+    labels: data.map(item => item.date),
+    datasets: [
+      {
+        label: 'Valor del Portafolio ($)',
+        // Usamos el portfolioValue para el eje Y
+        data: data.map(item => item.portfolioValue),
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.1, // Curvatura de la línea
+        pointRadius: 2, // Puntos en la gráfica
+      },
+    ],
+  };
+
+  // 2. Configuramos las opciones de la gráfica
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false, // Permite que el CSS defina la altura
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Evolución del Portafolio en Tiempo Real',
+        font: {
+          size: 18,
+        },
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          // Formatear el tooltip para mostrar la moneda
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += new Intl.NumberFormat('es-CL', {
+                style: 'currency',
+                currency: 'CLP', // Puedes cambiar esto a USD si lo prefieres
+              }).format(context.parsed.y);
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        // Le decimos a Chart.js que el eje X es una escala de tiempo
+        type: 'time',
+        time: {
+          unit: 'day', // Agrupar por día
+          tooltipFormat: 'dd/MM/yyyy', // Formato en el tooltip
+          displayFormats: {
+            day: 'dd MMM' // Formato en el eje
+          }
+        },
+        title: {
+          display: true,
+          text: 'Fecha',
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Valor ($)',
+        },
+        // Formatear el eje Y como moneda
+        ticks: {
+           callback: function(value, index, ticks) {
+               return '$' + new Intl.NumberFormat('es-CL').format(value);
+           }
+        }
+      },
+    },
+  };
 
   return (
-    // ResponsiveContainer hace que el gráfico ocupe el 100% del div padre
-    <ResponsiveContainer width="100%" height={400}>
-      <LineChart
-        data={data}
-        margin={{
-          top: 20, right: 30, left: 20, bottom: 5,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        {/* 'dataKey' debe coincidir con la clave del objeto de datos (ej: 'name') */}
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Line 
-          type="monotone" 
-          // 'dataKey' debe coincidir con la clave del valor (ej: 'value')
-          dataKey="value" 
-          stroke="#8884d8" 
-          strokeWidth={2}
-          activeDot={{ r: 8 }} 
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="chart-container">
+      <Line options={options} data={chartData} />
+    </div>
   );
 };
+
+export default PortfolioChart;
