@@ -37,6 +37,13 @@ const PortfolioChart = ({ data }) => {
         data: data.map(item => item.portfolioValue),
         borderColor: 'rgb(75, 192, 192)',
         // ...
+      },
+      {
+        label: 'Contribuciones ($)',
+        data: data.map(item => item.contributions),
+        borderColor: 'rgb(153, 102, 255)',
+        borderDash: [5, 5], 
+        pointRadius: 0,
       }
     ],
   };
@@ -51,7 +58,7 @@ const PortfolioChart = ({ data }) => {
       },
       title: {
         display: true,
-        text: 'Evolución del Portafolio en Tiempo Real',
+        text: 'Evolución de tu Portafolio',
         font: {
           size: 18,
         },

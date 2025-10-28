@@ -33,31 +33,46 @@
 }
 
 /* Los estilos del botón, logo y título no cambian */
+/* Estilos para el botón de hamburguesa (sidebar-toggle-btn) */
 .sidebar-toggle-btn {
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  color: #555;
+  background: none; 
+  border: none; 
+  
+  /* MODIFICADO: Quitar tamaño fijo y usar padding */
+  /* width: 40px; */  /* <-- Eliminado */
+  /* height: 40px; */ /* <-- Eliminado */
+  padding: 8px 12px; /* Añadimos padding para darle espacio */
+
+  display: flex; 
+  align-items: center; /* Centra ícono y texto verticalmente */
+  justify-content: center; 
+  gap: 8px; /* NUEVO: Espacio entre el ícono y el texto */
+  
+  color: #555; 
   cursor: pointer;
-  padding: 0 10px 0 0;
-  margin-right: 10px;
-  line-height: 1;
-  border-right: 1px solid #eee;
+  margin-right: 16px; 
+  border-right: 1px solid #eee; 
+  line-height: 1; 
+  transition: color 0.2s ease, background-color 0.2s ease;
+  
+  /* NUEVO: Un leve redondeo se verá bien */
+  border-radius: 6px; 
 }
+
 .sidebar-toggle-btn:hover {
   color: #000;
+  background-color: #f5f5f5; /* Mantenemos el hover */
 }
 
-.header-logo {
-  height: 40px;
-  width: auto;
-  margin-right: 16px;
+/* NUEVO: Estilo para el icono (mantiene su tamaño) */
+.sidebar-toggle-icon {
+  font-size: 1.8rem;
+  line-height: 1; /* Ayuda a la alineación vertical */
 }
 
-.header-title {
-  font-size: 1.75rem;
-  line-height: 1.2;
-  margin: 0;
+/* NUEVO: Estilo para el texto */
+.sidebar-toggle-text {
+  font-size: 0.9rem; /* Tamaño de letra normal */
   font-weight: 600;
-  color: #213547;
+  color: #333;
 }

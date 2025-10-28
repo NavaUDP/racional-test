@@ -37,10 +37,10 @@ const COLOR_BLUE = 'rgba(52, 152, 219, 0.8)';
 
 const DailyReturnChart = ({ data }) => {
   // Estado para el tipo de gráfico (barra/línea)
-  const [chartType, setChartType] = useState('line');
+  const [chartType, setChartType] = useState('bar');
   
   // 3. NUEVO ESTADO: Para el rango de fechas
-  const [dateRange, setDateRange] = useState('all'); // 'all', '6m', '3m', '2w'
+  const [dateRange, setDateRange] = useState('3m'); // 'all', '6m', '3m', '2w'
 
   // 4. LÓGICA DE FILTRADO
   // Usamos useMemo para que esto no se recalcule en cada render,
@@ -147,7 +147,7 @@ const DailyReturnChart = ({ data }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      title: { display: true, text: 'Volatilidad: Retornos Diarios', font: { size: 18 } },
+      title: { display: true, text: 'Retornos Diarios', font: { size: 18 } },
       tooltip: commonTooltip,
     },
     scales: commonScales,
@@ -158,7 +158,7 @@ const DailyReturnChart = ({ data }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      title: { display: true, text: 'Volatilidad: Retornos Diarios', font: { size: 18 } },
+      title: { display: true, text: 'Retornos Diarios', font: { size: 18 } },
       tooltip: { ...commonTooltip, mode: 'index', intersect: false, },
     },
     scales: commonScales,

@@ -1,26 +1,21 @@
 import React from 'react';
-import './Header.css'; // Importamos los estilos que crearemos
-import racionalLogo from '../../assets/racional-logo.png'; // Ajustamos la ruta para subir 2 niveles
+import './Header.css'; 
+import racionalLogo from '../../assets/racional-logo.png'; 
 
-/**
- * El nuevo componente Header.
- * Recibe 'onToggleSidebar' como prop para poder llamar a la función
- * que está en App.jsx.
- */
 const Header = ({ onToggleSidebar }) => {
   return (
     <header className="site-header">
-      {/* Usamos un div interno para centrar el contenido 
-        y que coincida con el ancho del dashboard
-      */}
       <div className="header-content">
         <button 
           className="sidebar-toggle-btn" 
-          onClick={onToggleSidebar} // Usamos la prop
-          aria-label="Abrir menú"
+          onClick={onToggleSidebar} 
+          aria-label="Abrir historial de aportes" // 1. (Opcional) Mejorar accesibilidad
         >
-          ☰
+          {/* 2. ESTRUCTURA MODIFICADA DEL BOTÓN */}
+          <span className="sidebar-toggle-icon">☰</span>
+          <span className="sidebar-toggle-text">Aportes</span>
         </button>
+        
         <img src={racionalLogo} className="header-logo" alt="Racional Logo" />
         <h1 className="header-title">Bienvenido a tu Portafolio</h1>
       </div>
