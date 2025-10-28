@@ -17,7 +17,12 @@ Una vez creado e iniciado el entorno virtual, debe instalar los requerimientos n
 
 pip install -r requirements.txt
 
-Una vez instalado los requerimientos necesarios para la API, se debe ejecutar el siguiente comando para levantar el servidor local:
+Una vez instalados los requerimientos, es necesario ejecutar el comando:
+
+python manage.py migrate
+
+Esto es para la inicialziación de la base de datos, además de inserción de datos de prueba y usuario admin.
+Una vez ejecutado el migrate, se debe ejecutar el siguiente comando para levantar el servidor local:
 
 python manage.py runserver
 
@@ -29,17 +34,36 @@ password: admin
 Esto dará un token de acceso lo que nos permitirá hacer consultas a la API.
 Dentro de la vista de administrador se pueden hacer modificaciones manuales a la base de datos, como agregar más usuarios, agregar o eliminar stocks, etc.
 
+Si desea hacer la prueba de la API a través de un software dedicado como Postman, debe enviar las siguientes credenciales mediante una solicitud POST a http://127.0.0.1:8000/api/token-auth/
+
+{
+    username: admin,
+    password: admin    
+}
+
+Y obtendrá el token de respuesta en el siguiente formato
+
+{
+    "token": "<token>"
+}
+
+este token debe ser ingresado como Header antes de cualquier consulta.
+
+De esta forma, se pueden realizar las pruebas de la API desde el navegador entrando en las URL correspondientes, teniendo una interfaz entregada por django, o realizando las consultas manualmente.
+
 # Rutas API
-La API cuenta con 4 rutas principales, siendo estas:
+La API cuenta con 5 rutas, siendo estas:
 
 /admin/
+/api/token-auth/
 /api/transactions/
 /api/users/id/
 /api/users/id/portafolio
 
 La primera ruta es para el inicio de sesión y verificación de credenciales para el uso seguro de la API
-La segunda ruta corresponde a la ruta para obtener todas las transacciones, donde a partir de 4 transacciones principales se puede obtener información.
-El formato que debe tener el JSON para hacer una solicitud GET es:
+La segunda ruta también corresponde a una ruta de autenticación, en forma de obtención de token como se vió en el punto anterior.
+La tercera ruta corresponde a la ruta para obtener todas las transacciones, donde a partir de 4 transacciones principales se interactúa con la base de datos.
+El formato que debe tener el JSON para hacer una solicitud POST es:
 
 {
     "stock": ,
@@ -52,7 +76,7 @@ En donde a partir del atributo "type" se elige el tipo de transacción a ejecuta
 Para cuando se ejecuta la transacción "deposit" o "withdrawal" los atributos "stock" y "quantity" puden ser null
 Para cuando se ejecuta la transacción "buy" o "sell" el atrubuto "total_amount" debe quedar nulo ya que la API calcula el monto total.
 
-La tercera ruta corresponde a la ruta para obtener toda la información del usuario. En este caso la id = 1 que es el único usuario creado en la base de datos.
+La cuarta ruta corresponde a la ruta para obtener toda la información del usuario. En este caso la id = 1 que es el único usuario creado en la base de datos.
 Esta ruta cuenta con métodos GET, PUT, PATCH (para la modificación de info del usuario), HEAD y OPTIONS
 
 {
@@ -65,7 +89,7 @@ Esta ruta cuenta con métodos GET, PUT, PATCH (para la modificación de info del
     "balance": ""
 }
 
-Por último, la cuarta ruta corresponde al portafolio del usuario, en donde se muestra toda la información del portafolio, con el valor del mismo y de qué Stocks se compone este.
+Por último, la quinta ruta corresponde al portafolio del usuario, en donde se muestra toda la información del portafolio, con el valor del mismo y de qué Stocks se compone este.
 
 # Descripción del modelo de datos
 
