@@ -69,5 +69,3 @@ class TransactionAPITests(APITestCase):
         self.user.refresh_from_db() # Recargamos los datos del usuario desde la BD
         # Saldo inicial (10000) + Depósito (5000) = 15000
         self.assertEqual(self.user.balance, Decimal('15000.00'))
-
-# --- Aquí añadiremos más tests ---
