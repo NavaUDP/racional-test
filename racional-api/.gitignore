@@ -1,5 +1,5 @@
 # Entorno Virtual
-venv/
+api-env/
 
 # Base de datos SQLite
 db.sqlite3
@@ -10,3 +10,4 @@ __pycache__/
 
 # Archivos de entorno (si los usas)
 .env
+
